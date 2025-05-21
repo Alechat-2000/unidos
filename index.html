@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Votar nos U.N.E</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f2f2f2;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        form {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #0066cc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:disabled {
+            background-color: #888;
+            cursor: not-allowed;
+        }
+        .propuesta {
+            background-color: #fff;
+            border: 1px solid #ccc;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.05);
+        }
+        .admin-controls {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Vota para construir una mejor escuela</h1>
+    <h2>Deja tus propuestas o apoya las de los demás</h2>
+    <hr>
+
+    <img src="logo U.N.E.png" height="500"/>
+
+    <form id="formularioPropuesta">
+        <label for="nombre">Nombre:</label>
+        <input type="text" id="nombre" name="nombre" required>
+
+        <label for="grado">Grado:</label>
+        <select id="grado" name="grado" required>
+            <option value="">Selecciona tu grado</option>
+            <option value="1°">1°</option>
+            <option value="2°">2°</option>
+            <option value="3°">3°</option>
+        </select>
+
+        <label for="grupo">Grupo:</label>
+        <select id="grupo" name="grupo" required>
+            <option value="">Selecciona tu grupo</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="D">D</option>
+            <option value="E">E</option>
+            <option value="F">F</option>
+        </select>
+
+        <label for="propuesta">Propuesta:</label>
+        <textarea id="propuesta" name="propuesta" rows="4" required></textarea>
+
+        <button type="submit">Enviar propuesta</button>
+    
+    </form>
+
+    <hr>
+
+    <div class="admin-controls">
+        <button onclick="activarModoAdmin()">🔑 Entrar como administrador</button>
+    </div>
+
+    <h2>Propuestas</h2>
+    <div id="listaPropuestas"></div>
+
+    <script>
+        let propuestas = JSON.parse(localStorage.getItem("propuestas")) || [];
+        let votosRealizados = JSON.parse(localStorage.getItem("votosRealizados")) || [];
+        let esAdmin = false;
+
+        function guardarPropuestas() {
+            localStorage.setItem("propuestas", JSON.stringify(propuestas));
+        }
+
+        function guardarVotosRealizados() {
+            localStorage.setItem("votosRealizados", JSON.stringify(votosRealizados));
+        }
+
+        function mostrarPropuestas() {
+            const contenedor = document.getElementById("listaPropuestas");
+            contenedor.innerHTML = "";
+
+            propuestas.forEach((p, index) => {
+                const div = document.createElement("div");
+                div.className = "propuesta";
+
+                const yaVoto = votosRealizados.includes(index);
+                div.innerHTML = `
+                    <strong>${p.nombre} (${p.grado} ${p.grupo}) dice:</strong><br>
+                    <p>${p.texto}</p>
+                    <strong>Votos: ${p.votos}</strong><br>
+                    <button onclick="votar(${index})" ${yaVoto ? "disabled" : ""}>
+                        ${yaVoto ? "Ya votaste" : "Votar"}
+                    </button>
+                    ${esAdmin ? `<button onclick="eliminarPropuesta(${index})" style="background-color:red;margin-left:10px;">
+                        Eliminar
+                    </button>` : ""}
+                `;
+                contenedor.appendChild(div);
+            });
+        }
+
+        function votar(index) {
+            if (votosRealizados.includes(index)) {
+                alert("Ya votaste por esta propuesta.");
+                return;
+            }
+
+            propuestas[index].votos++;
+            votosRealizados.push(index);
+            guardarPropuestas();
+            guardarVotosRealizados();
+            mostrarPropuestas();
+        }
+
+        function eliminarPropuesta(index) {
+            if (!esAdmin) return;
+            if (confirm("¿Estás seguro de que quieres eliminar esta propuesta?")) {
+                propuestas.splice(index, 1);
+                votosRealizados = votosRealizados.filter(i => i !== index);
+                guardarPropuestas();
+                guardarVotosRealizados();
+                mostrarPropuestas();
+            }
+        }
+
+        function activarModoAdmin() {
+            const contraseña = prompt("Ingresa la contraseña de administrador:");
+            if (contraseña === "Unidoscon2A") {
+                alert("Modo administrador activado.");
+                esAdmin = true;
+                mostrarPropuestas();
+            } else {
+                alert("Contraseña incorrecta.");
+            }
+        }
+
+        document.getElementById("formularioPropuesta").addEventListener("submit", function(e) {
+            e.preventDefault();
+            const nombre = document.getElementById("nombre").value.trim();
+            const grado = document.getElementById("grado").value;
+            const grupo = document.getElementById("grupo").value;
+            const texto = document.getElementById("propuesta").value.trim();
+
+            if (nombre && grado && grupo && texto) {
+                propuestas.push({ nombre, grado, grupo, texto, votos: 0 });
+                guardarPropuestas();
+                mostrarPropuestas();
+                this.reset();
+            }
+        });
+
+        // Mostrar propuestas al cargar
+        mostrarPropuestas();
+    </script>
+
+</body>
+</html>
